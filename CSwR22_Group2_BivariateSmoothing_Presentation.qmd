@@ -1,0 +1,32 @@
+---
+title: "CSwR22 Group2 Bivariate Smoothing"
+author: "Isin Altinkaya, Dumitru Sebastian Pavel"
+format: beamer
+editor: visual
+---
+
+# Introduction
+
+## Bivariate smoothing
+
+## Objectives
+
+-   Implement a smoothing spline smoother using LOOCV for selecting the tuning parameter $\lambda$
+-   Test the accuracy of the implementation
+-   Compare the results with `smooth.spline`
+-   Code improvement
+-   Benchmarking
+-   Bottlenecks (profiling)
+-   Test the implementation with real data and simulated data
+-   Utilizing matrix decomposition in combination with LOOCV
+
+## Theory
+
+Leave one out cross validation
+
+## Benchmarking
+
+```{r}
+print("Hello world")
+```
+
