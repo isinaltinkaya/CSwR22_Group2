@@ -33,11 +33,12 @@ smoother <- function(y, inner_knots, lambda, rep=3){
 #if we do: carry on i.e implement LOOCV for lambda
 #in the future: fit something more "exotic"
 
-wave <- seq(0, 10, 0.1)
+wave <- seq(0, 10, 0.2)
 y <- sin(wave) + rnorm(wave)
 plot(wave, y)
 
 smo <- smoother(y, wave, 0.3)
-lines(wave, smo, add=T)
-lines(wave, sin(wave))
+lines(wave, smo, col='blue')
+lines(wave, sin(wave), col='red')
 lines(wave, smo - sin(wave))
+
