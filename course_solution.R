@@ -42,3 +42,32 @@ lines(wave, smo, col='blue')
 lines(wave, sin(wave), col='red')
 lines(wave, smo - sin(wave))
 
+
+loocv_smoother <- function(inner_knots, y, lambda){
+  n <-  length(lambda)#length(x) == length(y)
+  loss <- rep(Inf, n)
+  Sm <- list()
+  Omega <- pen_mat(inner_knots) #penalty matrix
+  Phi <- splineDesign(c(rep(range(inner_knots), 3), inner_knots), inner_knots)
+  tphi_phi <- crossprod(Phi)
+  #base functions evaluation
+  #f_hat = Phi.(Phi^T.Phi + lambda.Omega)^-1.Phi^T.y
+  #= S.y
+  #loocv = sum(((y[i]-f_hat[i])/(1-S[i,i]))^2)
+  for(i in 1:n){
+    if(det(tphi_phi + lambda[i] * Omega) != 0){ #make sure we have a solution
+      S <- Phi %*% solve(tphi_phi + lambda[i] * Omega) %*% t(Phi)
+      #S_lambda matrix
+      Sm[[i]] <- S #spares computation time for the return value
+      loss[i] <- mean(((y - S * y)/(1 - diag(S)))^2, na.rm = TRUE)
+    }
+  }
+  ind <- which.min(loss) #index of best lambda i.e loss i.e S matrix
+  return(list(lambda=lambda, best_lambda=lambda[ind],
+              S=Sm[[ind]], loss=loss, index=ind))
+}
+
+l_m <- loocv_smoother(wave, y, seq(0, 1, 0.1))
+#l_m <- loocv_smoother(wave, y, c(0.3))
+print(l_m$loss)
+lines(wave, l_m$S %*% y)
