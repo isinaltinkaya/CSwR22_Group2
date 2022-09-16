@@ -5,8 +5,8 @@ library(bestglm) #for LOOCV
 
 #https://cswr.nrhstat.org/bivariate.html?q=spline#splines
 
-pen_mat <- function(inner_knots, rep=3) {
-  knots <- sort(c(rep(range(inner_knots), rep), inner_knots))
+pen_mat <- function(inner_knots, r=3) {
+  knots <- sort(c(rep(range(inner_knots), r), inner_knots))
   d <- diff(inner_knots)  # The vector of knot differences; b - a 
   g_ab <- splineDesign(knots, inner_knots, derivs = 2) 
   knots_mid <- inner_knots[-length(inner_knots)] + d / 2
@@ -18,8 +18,8 @@ pen_mat <- function(inner_knots, rep=3) {
       crossprod(d * g_b, g_b)) / 6 #Simpson's rule
 }
 
-smoother <- function(y, inner_knots, lambda, rep=3){ 
-  Phi <- splineDesign(c(rep(range(inner_knots), rep), inner_knots), inner_knots)
+smoother <- function(y, inner_knots, lambda, r=3){ 
+  Phi <- splineDesign(c(rep(range(inner_knots), r), inner_knots), inner_knots)
   Omega <- pen_mat(inner_knots)
   
   Phi %*% solve(
