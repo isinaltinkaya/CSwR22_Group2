@@ -20,13 +20,143 @@ editor: visual
 -   Test the implementation with real data and simulated data
 -   Utilizing matrix decomposition in combination with LOOCV
 
-## Theory
+## Theory (1/3)
 
-Leave one out cross validation
+Leave one out cross validation. From the course, for a linear smoother: $$LOOCV=\sum_i (y_i - \hat{f}^{-i}_i)^2=\sum_i (\frac{y_i - \hat{f}_i}{1 - S_{ii}})^2$$
+
+## Theory (2/3)
+
+A linear smoother $\hat{f}$ can be written as: $$\hat{f}=Sy$$ Where $S$ is a matrix and $y$ is the vector containing data (the labels).
+
+## Theory (3/3)
+
+A spline smoother is written as: $$\hat{f}=\Phi(\Phi^T\Phi + \lambda \Omega)^{-1}\Phi^Ty$$ Where $S_{\lambda}=\Phi(\Phi^T\Phi + \lambda \Omega)^{-1}\Phi^T$.
+
+## Implementation: $\Phi$
+
+The matrix $\Phi$ can be implemented as such:
+
+```{r}
+splineDesign(c(rep(range(inner_knots), 3), inner_knots), inner_knots)
+```
+
+Where `inner_knots` are the knots given to the smoother.
+
+## Implementation: $\Omega$
+
+The penalty matrix $\Omega$ can be implemented as such:
+
+```{r}
+pen_mat <- function(inner_knots, r=3){
+  knots <- sort(c(rep(range(inner_knots), r), inner_knots))
+  d <- diff(inner_knots)  # The vector of knot differences; b - a 
+  g_ab <- splineDesign(knots, inner_knots, derivs = 2) 
+  knots_mid <- inner_knots[-length(inner_knots)] + d / 2
+  g_ab_mid <- splineDesign(knots, knots_mid, derivs = 2)
+  g_a <- g_ab[-nrow(g_ab), ]
+  g_b <- g_ab[-1, ]
+  (crossprod(d * g_a,  g_a) + 
+      4 * crossprod(d * g_ab_mid, g_ab_mid) + 
+      crossprod(d * g_b, g_b)) / 6  #Simpson's rule
+}
+```
+
+Where the integrations are calculated using Simpson's rule.
+
+## Implementation: `LOOCV`
+
+```{r}
+loocv_smoother <- function(inner_knots, y, lambda){
+  n <-  length(lambda) #length(x) == length(y)
+  loss <- rep(Inf, n) #store the loss for each lambda
+  Sm <- list() #store all the S_lambda matrices
+
+  Omega <- pen_mat(inner_knots) #penalty matrix
+  #Phi matrix
+  Phi <- splineDesign(c(rep(range(inner_knots), 3), inner_knots), inner_knots)
+
+  #Phi^T Phi
+  tphi_phi <- crossprod(Phi) #spares computation time: it's same for all lambdas
+  
+  for(i in 1:n){ #iterate over all lambdas
+    if(det(tphi_phi + lambda[i] * Omega) != 0){ #make sure we have a solution
+      #S_lambda matrix
+      S <- Phi %*% solve(tphi_phi + lambda[i] * Omega) %*% t(Phi)
+
+      #store the matrix into a list
+      Sm[[i]] <- S #spares computation time for the return value
+
+      #compute and add loss
+      loss[i] <- mean(((y - S * y)/(1 - diag(S)))^2, na.rm = TRUE)
+    }
+  }
+
+  #index of best lambda i.e smallest loss i.e corresponding S matrix
+  ind <- which.min(loss)
+
+  #return all the values we're interested in
+  return(list(lambda=lambda, best_lambda=lambda[ind],
+              S=Sm[[ind]], loss=loss, index=ind))
+}
+```
+
+## Implementation: Context
+
+```{r}
+wave <- seq(0, 10, 0.2)
+y <- sin(wave) + rnorm(wave)
+```
+
+## Implementation: Context (visualization)
+
+```{r}
+plot(wave, y)
+```
+
+
+## Implementation: Usage of the smoother
+
+```{r}
+l_m <- loocv_smoother(wave, y, seq(0, 1, 0.1))
+smoothed_y <- l_m$S %*% y
+```
+
+## Implementation: usage of the smoother (vizualisation)
+
+```{r}
+plot(wave, y)
+lines(wave, smoothed_y, color='red')
+```
+
+## Error between the smoother and the original wave (vizualisation)
+
+```{r}
+plot(wave, sin(wave) - smoothed_y)
+```
+
+## MSE(sin(wave) - smoothed_y)
+
+```{r}
+mean((sin(wave) - smoothed_y)^2)
+```
+
+## Smoother with `smooth.spline`
+
+```{r}
+r_smooth <- smooth.spline(wave, y)
+mean((r_smooth$y - sin(wave))^2)
+```
+
+
+## Comparison with our smoother
+
+```{r}
+mean((r_smooth$y - smoothed_y)^2)
+```
+
 
 ## Benchmarking
 
 ```{r}
 print("Hello world")
 ```
-
