@@ -34,11 +34,8 @@ A spline smoother is written as: $$\hat{f}=\Phi(\Phi^T\Phi + \lambda \Omega)^{-1
 
 ## Implementation: $\Phi$
 
-The matrix $\Phi$ can be implemented as such:
-
-```{r}
-splineDesign(sort(c(rep(range(inner_knots), 3), inner_knots)), inner_knots)
-```
+The matrix $\Phi$ can be implemented as such:\
+`splineDesign(sort(c(rep(range(inner_knots), 3), inner_knots)), inner_knots)`
 
 Where `inner_knots` are the knots given to the smoother.
 
@@ -47,6 +44,7 @@ Where `inner_knots` are the knots given to the smoother.
 The penalty matrix $\Omega$ can be implemented as such:
 
 ```{r}
+library(splines) #for splineDesign
 pen_mat <- function(inner_knots, r=3){
   knots <- sort(c(rep(range(inner_knots), r), inner_knots))
   d <- diff(inner_knots)  # The vector of knot differences; b - a 
@@ -65,40 +63,45 @@ Where the integrations are calculated using Simpson's rule.
 
 ## Implementation: `LOOCV`
 
-```{r}
-loocv_smoother <- function(inner_knots, y, lambda){
-  n <-  length(lambda) #length(x) == length(y)
-  loss <- rep(Inf, n) #store the loss for each lambda
-  Sm <- list() #store all the S_lambda matrices
+1.  <div>
 
-  Omega <- pen_mat(inner_knots) #penalty matrix
-  #Phi matrix
-  Phi <- splineDesign(c(rep(range(inner_knots), 3), inner_knots), inner_knots)
+    ```{r}
+    library(splines) #for splineDesign
+    loocv_smoother <- function(inner_knots, y, lambda){
+      n <-  length(lambda) #length(x) == length(y)
+      loss <- rep(Inf, n) #store the loss for each lambda
+      Sm <- list() #store all the S_lambda matrices
 
-  #Phi^T Phi
-  tphi_phi <- crossprod(Phi) #spares computation time: it's same for all lambdas
-  
-  for(i in 1:n){ #iterate over all lambdas
-    if(det(tphi_phi + lambda[i] * Omega) != 0){ #make sure we have a solution
-      #S_lambda matrix
-      S <- Phi %*% solve(tphi_phi + lambda[i] * Omega) %*% t(Phi)
+      Omega <- pen_mat(inner_knots) #penalty matrix
+      #Phi matrix
+      Phi <- splineDesign(c(rep(range(inner_knots), 3), inner_knots), inner_knots)
 
-      #store the matrix into a list
-      Sm[[i]] <- S #spares computation time for the return value
+      #Phi^T Phi
+      tphi_phi <- crossprod(Phi) #spares computation time: it's same for all lambdas
+      
+      for(i in 1:n){ #iterate over all lambdas
+        if(det(tphi_phi + lambda[i] * Omega) != 0){ #make sure we have a solution
+          #S_lambda matrix
+          S <- Phi %*% solve(tphi_phi + lambda[i] * Omega) %*% t(Phi)
 
-      #compute and add loss
-      loss[i] <- mean(((y - S * y)/(1 - diag(S)))^2, na.rm = TRUE)
+          #store the matrix into a list
+          Sm[[i]] <- S #spares computation time for the return value
+
+          #compute and add loss
+          loss[i] <- mean(((y - S * y)/(1 - diag(S)))^2, na.rm = TRUE)
+        }
+      }
+
+      #index of best lambda i.e smallest loss i.e corresponding S matrix
+      ind <- which.min(loss)
+
+      #return all the values we're interested in
+      return(list(lambda=lambda, best_lambda=lambda[ind],
+                  S=Sm[[ind]], loss=loss, index=ind))
     }
-  }
+    ```
 
-  #index of best lambda i.e smallest loss i.e corresponding S matrix
-  ind <- which.min(loss)
-
-  #return all the values we're interested in
-  return(list(lambda=lambda, best_lambda=lambda[ind],
-              S=Sm[[ind]], loss=loss, index=ind))
-}
-```
+    </div>
 
 ## Implementation: Context
 
@@ -120,14 +123,14 @@ l_m <- loocv_smoother(wave, y, seq(0, 1, 0.1))
 smoothed_y <- l_m$S %*% y
 ```
 
-## Implementation: usage of the smoother (vizualisation)
+## Implementation: Usage of the smoother (visualization)
 
 ```{r}
 plot(wave, y)
 lines(wave, smoothed_y, color='red')
 ```
 
-## Error between the smoother and the original wave (vizualisation)
+## Error between the smoother and the original wave (visualization)
 
 ```{r}
 plot(wave, sin(wave) - smoothed_y)
