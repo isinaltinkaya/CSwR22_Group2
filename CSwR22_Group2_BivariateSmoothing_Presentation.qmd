@@ -37,7 +37,7 @@ A spline smoother is written as: $$\hat{f}=\Phi(\Phi^T\Phi + \lambda \Omega)^{-1
 The matrix $\Phi$ can be implemented as such:
 
 ```{r}
-splineDesign(c(rep(range(inner_knots), 3), inner_knots), inner_knots)
+splineDesign(sort(c(rep(range(inner_knots), 3), inner_knots)), inner_knots)
 ```
 
 Where `inner_knots` are the knots given to the smoother.
@@ -113,7 +113,6 @@ y <- sin(wave) + rnorm(wave)
 plot(wave, y)
 ```
 
-
 ## Implementation: Usage of the smoother
 
 ```{r}
@@ -147,13 +146,11 @@ r_smooth <- smooth.spline(wave, y)
 mean((r_smooth$y - sin(wave))^2)
 ```
 
-
 ## Comparison with our smoother
 
 ```{r}
 mean((r_smooth$y - smoothed_y)^2)
 ```
-
 
 ## Benchmarking
 
