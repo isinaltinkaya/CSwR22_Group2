@@ -169,7 +169,7 @@
 
 \begin{document}
 \frame{\titlepage}
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[frame hidden, breakable, boxrule=0pt, sharp corners, enhanced, borderline west={3pt}{0pt}{shadecolor}, interior hidden]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[sharp corners, borderline west={3pt}{0pt}{shadecolor}, breakable, boxrule=0pt, interior hidden, frame hidden, enhanced]}{\end{tcolorbox}}\fi
 
 \hypertarget{introduction}{%
 \section{Introduction}\label{introduction}}
@@ -202,97 +202,8 @@
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Theory (1/3)}
-\protect\hypertarget{theory-13}{}
-Leave one out cross validation. From the course, for a linear smoother:
-\[LOOCV=\sum_i (y_i - \hat{f}^{-i}_i)^2=\sum_i (\frac{y_i - \hat{f}_i}{1 - S_{ii}})^2\]
-\end{frame}
-
-\begin{frame}{Theory (2/3)}
-\protect\hypertarget{theory-23}{}
-A linear smoother \(\hat{f}\) can be written as: \[\hat{f}=Sy\] Where
-\(S\) is a matrix and \(y\) is the vector containing data (the labels).
-\end{frame}
-
-\begin{frame}{Theory (3/3)}
-\protect\hypertarget{theory-33}{}
-A spline smoother is written as:
-\[\hat{f}=\Phi(\Phi^T\Phi + \lambda \Omega)^{-1}\Phi^Ty\] Where
-\(S_{\lambda}=\Phi(\Phi^T\Phi + \lambda \Omega)^{-1}\Phi^T\).
-\end{frame}
-
-\begin{frame}[fragile]{Implementation: \(\Phi\)}
-\protect\hypertarget{implementation-phi}{}
-The matrix \(\Phi\) can be implemented as such:\\
-\texttt{splineDesign(sort(c(rep(range(inner\_knots),\ 3),\ inner\_knots)),\ inner\_knots)}
-
-Where \texttt{inner\_knots} are the knots given to the smoother.
-\end{frame}
-
-\begin{frame}{Implementation: \(\Omega\)}
-\protect\hypertarget{implementation-omega}{}
-The penalty matrix \(\Omega\) can be implemented as such:
-
-Where the integrations are calculated using Simpson's rule.
-\end{frame}
-
-\begin{frame}{Implementation: \texttt{LOOCV}}
-\protect\hypertarget{implementation-loocv}{}
-\begin{enumerate}
-\item
-\end{enumerate}
-\end{frame}
-
-\begin{frame}{Implementation: Context}
-\protect\hypertarget{implementation-context}{}
-\end{frame}
-
-\begin{frame}{Implementation: Context (visualization)}
-\protect\hypertarget{implementation-context-visualization}{}
-\includegraphics{CSwR22_Group2_BivariateSmoothing_Presentation_files/figure-beamer/unnamed-chunk-4-1.pdf}
-\end{frame}
-
-\begin{frame}{Implementation: Usage of the smoother}
-\protect\hypertarget{implementation-usage-of-the-smoother}{}
-\end{frame}
-
-\begin{frame}{Implementation: Usage of the smoother (visualization)}
-\protect\hypertarget{implementation-usage-of-the-smoother-visualization}{}
-\includegraphics{CSwR22_Group2_BivariateSmoothing_Presentation_files/figure-beamer/unnamed-chunk-6-1.pdf}
-\end{frame}
-
-\begin{frame}{Error between the smoother and the original wave
-(visualization)}
-\protect\hypertarget{error-between-the-smoother-and-the-original-wave-visualization}{}
-\includegraphics{CSwR22_Group2_BivariateSmoothing_Presentation_files/figure-beamer/unnamed-chunk-7-1.pdf}
-\end{frame}
-
-\begin{frame}[fragile]{MSE(sin(wave) - smoothed\_y)}
-\protect\hypertarget{msesinwave---smoothed_y}{}
-\begin{verbatim}
-[1] 0.1847061
-\end{verbatim}
-\end{frame}
-
-\begin{frame}[fragile]{Smoother with \texttt{smooth.spline}}
-\protect\hypertarget{smoother-with-smooth.spline}{}
-\begin{verbatim}
-[1] 0.1938099
-\end{verbatim}
-\end{frame}
-
-\begin{frame}[fragile]{Comparison with our smoother}
-\protect\hypertarget{comparison-with-our-smoother}{}
-\begin{verbatim}
-[1] 0.001081587
-\end{verbatim}
-\end{frame}
-
-\begin{frame}[fragile]{Benchmarking}
+\begin{frame}{Benchmarking}
 \protect\hypertarget{benchmarking}{}
-\begin{verbatim}
-[1] "Hello world"
-\end{verbatim}
 \end{frame}
 
 

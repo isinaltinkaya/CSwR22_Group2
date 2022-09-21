@@ -54,7 +54,7 @@ p_data +
 
 range(smooth.spline(data$df$x,data$df$y,all.knots=TRUE)$y - smoother_v1(data$df$x,data$df$y,useSVD = TRUE, subsample=TRUE)$y)
 
-smoother_v2(data,useSVD=FALSE, subsample = FALSE)
+#smoother_v2(data,useSVD=FALSE, subsample = FALSE)
 
 mb<-microbenchmark(smoother_v1(data$df$x,data$df$y),
                smoother_v2(data,useSVD=FALSE, subsample = TRUE),
