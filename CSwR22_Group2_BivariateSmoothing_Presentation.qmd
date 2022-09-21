@@ -20,17 +20,6 @@ editor: visual
 -   Test the implementation with real data and simulated data
 -   Utilizing matrix decomposition in combination with LOOCV
 
-## Theory (1/3)
-
-Leave one out cross validation. From the course, for a linear smoother: $$LOOCV=\sum_i (y_i - \hat{f}^{-i}_i)^2=\sum_i (\frac{y_i - \hat{f}_i}{1 - S_{ii}})^2$$
-
-## Theory (2/3)
-
-A linear smoother $\hat{f}$ can be written as: $$\hat{f}=Sy$$ Where $S$ is a matrix and $y$ is the vector containing data (the labels).
-
-## Theory (3/3)
-
-A spline smoother is written as: $$\hat{f}=\Phi(\Phi^T\Phi + \lambda \Omega)^{-1}\Phi^Ty$$ Where $S_{\lambda}=\Phi(\Phi^T\Phi + \lambda \Omega)^{-1}\Phi^T$.
 
 ## Implementation: $\Phi$
 
@@ -174,6 +163,7 @@ p_data
 ```
 
 ## Benchmarking
+
 ```{r}
 p_data +
   geom_line(aes(y=smoother_v1(data$df$x,data$df$y)$y),
@@ -189,6 +179,7 @@ p_data +
 ```
 
 ## Benchmarking
+
 ```{r}
 
 mb<-microbenchmark(smoother_v1(data$df$x,data$df$y),
