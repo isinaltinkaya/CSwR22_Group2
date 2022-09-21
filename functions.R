@@ -230,7 +230,7 @@ loocv_smoother <- function(inner_knots, x, y, lambda){
               S=Sm[[ind]], y=sm_y[[ind]], loss=loss, index=ind))
 }
 
-loocv_smoother.v2 <- function(inner_knots, x, y, lambda){
+loocv_smoother.v2 <- function(inner_knots, x, y, lambda){ #<!-- from fda: bsplinepen -->
   n <-  length(lambda) #length(x) == length(y)
   loss <- rep(Inf, n) #store the loss for each lambda
   min_loss <- Inf #container for the minimal loss
@@ -238,25 +238,30 @@ loocv_smoother.v2 <- function(inner_knots, x, y, lambda){
   Sm <- 0 #hold the best S_lambda matrix
   sm_y <- 0
   
-  Omega <- penalty_matrix_v1(inner_knots) #penalty matrix
+  #Omega <- penalty_matrix_v1(inner_knots) #penalty matrix
+
   #Phi matrix
   Phi <- splineDesign(sort(c(rep(range(inner_knots), 3), inner_knots)), x)
-  
+
   #Phi^T Phi
   tphi_phi <- crossprod(Phi) #spares computation time: it's same for all lambdas
-  
+
+  basis <- create.bspline.basis(c(inner_knots[1], inner_knots[length(inner_knots)]), dim(tphi_phi)[2])
+  Omega <- bsplinepen(basis, returnMatrix=TRUE)
+
   for(i in 1:n){ #iterate over all lambdas
     if(det(tphi_phi + lambda[i] * Omega) != 0){ #make sure we have a solution
       #S_lambda matrix
       S <- Phi %*% solve(tphi_phi + lambda[i] * Omega) %*% t(Phi)
       
       #compute and add loss
-      loss[i] <- mean(((y - S * y)/(1 - diag(S)))^2, na.rm = TRUE)
+      ytmp = S %*% y
+      loss[i] <- mean(((y - ytmp)/(1 - diag(S)))^2, na.rm = TRUE)
       
       if(loss[i] <= min_loss){
         min_loss <- loss[i]
         Sm <- S
-        sm_y <- S %*% y
+        sm_y <- ytmp
         ind <- i
       }
     }
@@ -268,10 +273,13 @@ loocv_smoother.v2 <- function(inner_knots, x, y, lambda){
 }
 
 read_bike_series <- function(){
-  d <- read.csv("data/bike_sharing_daily.csv", sep=',')
+  d <- read.csv("bike_sharing_daily.csv", sep=',')
   d = d[c('dteday', 'cnt')]
   d$dteday <- as.Date(d$dteday, format =  "%Y-%m-%d")
   d$ind <- seq(1,length(d$cnt),1)
   return(d)
 }
 
+MSE <- function(y, yp){
+  return(mean((y-yp)^2, na.rm=TRUE))
+}

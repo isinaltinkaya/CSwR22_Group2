@@ -5,164 +5,69 @@ format: revealjs
 editor: visual
 ---
 
-# Introduction
-
 ## Bivariate smoothing
 
-## Objectives
+By Ișin Altinkaya and Dumitru Sebastian Pavel
 
--   Implement a smoothing spline smoother using LOOCV for selecting the tuning parameter $\lambda$
--   Test the accuracy of the implementation
--   Compare the results with `smooth.spline`
--   Code improvement
--   Benchmarking
--   Bottlenecks (profiling)
--   Test the implementation with real data and simulated data
--   Utilizing matrix decomposition in combination with LOOCV
+## Our implementation
 
+Arguments: `X`, `inner_knots`, `y` and `c(`$\lambda$`)`
 
-## Implementation: $\Phi$
+------------------------------------------------------------------------
 
-The matrix $\Phi$ can be implemented as such:\
-`splineDesign(sort(c(rep(range(inner_knots), 3), inner_knots)), inner_knots)`
+Compute $\Phi$ and $\Omega$
 
-Where `inner_knots` are the knots given to the smoother.
+Initialize $loss_{min}$ at `Inf` and $\lambda^*$, $S_{\lambda^*}$ and $\hat{f}$ at $0$
 
-## Implementation: $\Omega$
+Compute $\Phi^T \Phi$
 
-The penalty matrix $\Omega$ can be implemented as such:
+for $\lambda$ in `c(`$\lambda$`)` do:
 
-```{r}
-library(splines) #for splineDesign
-pen_mat <- function(inner_knots, r=3){
-  knots <- sort(c(rep(range(inner_knots), r), inner_knots))
-  d <- diff(inner_knots)  # The vector of knot differences; b - a 
-  g_ab <- splineDesign(knots, inner_knots, derivs = 2) 
-  knots_mid <- inner_knots[-length(inner_knots)] + d / 2
-  g_ab_mid <- splineDesign(knots, knots_mid, derivs = 2)
-  g_a <- g_ab[-nrow(g_ab), ]
-  g_b <- g_ab[-1, ]
-  (crossprod(d * g_a,  g_a) + 
-      4 * crossprod(d * g_ab_mid, g_ab_mid) + 
-      crossprod(d * g_b, g_b)) / 6  #Simpson's rule
-}
-```
+| Compute $S_{\lambda}$
 
-Where the integrations are calculated using Simpson's rule.
+| Compute $loss$, hence $\hat{f}_{tmp}$ `<-` $S_{\lambda^*} \cdot y$
 
-## Implementation: `LOOCV`
+| if $loss \leq loss_{min}$:
 
-1.  <div>
+|  $loss_{min}$ `<-` $loss$
 
-    ```{r}
-    library(splines) #for splineDesign
-    loocv_smoother <- function(inner_knots, y, lambda){
-      n <-  length(lambda) #length(x) == length(y)
-      loss <- rep(Inf, n) #store the loss for each lambda
-      Sm <- list() #store all the S_lambda matrices
+|  $\lambda^*$ `<-` $\lambda$
 
-      Omega <- pen_mat(inner_knots) #penalty matrix
-      #Phi matrix
-      Phi <- splineDesign(c(rep(range(inner_knots), 3), inner_knots), inner_knots)
+|  $\hat{f}$ `<-` $\hat{f}_{tmp}$
 
-      #Phi^T Phi
-      tphi_phi <- crossprod(Phi) #spares computation time: it's same for all lambdas
-      
-      for(i in 1:n){ #iterate over all lambdas
-        if(det(tphi_phi + lambda[i] * Omega) != 0){ #make sure we have a solution
-          #S_lambda matrix
-          S <- Phi %*% solve(tphi_phi + lambda[i] * Omega) %*% t(Phi)
+return $S_{\lambda^*}$, $\lambda^*$ and $\hat{f}$
 
-          #store the matrix into a list
-          Sm[[i]] <- S #spares computation time for the return value
-
-          #compute and add loss
-          loss[i] <- mean(((y - S * y)/(1 - diag(S)))^2, na.rm = TRUE)
-        }
-      }
-
-      #index of best lambda i.e smallest loss i.e corresponding S matrix
-      ind <- which.min(loss)
-
-      #return all the values we're interested in
-      return(list(lambda=lambda, best_lambda=lambda[ind],
-                  S=Sm[[ind]], loss=loss, index=ind))
-    }
-    ```
-
-    </div>
-
-## Implementation: Context
+## The data
 
 ```{r}
-wave <- seq(0, 10, 0.2)
-y <- sin(wave) + rnorm(wave)
-```
-
-## Implementation: Context (visualization)
-
-```{r}
-plot(wave, y)
-```
-
-## Implementation: Usage of the smoother
-
-```{r}
-l_m <- loocv_smoother(wave, y, seq(0, 1, 0.1))
-smoothed_y <- l_m$S %*% y
-```
-
-## Implementation: Usage of the smoother (visualization)
-
-```{r}
-plot(wave, y)
-lines(wave, smoothed_y, color='red')
-```
-
-## Error between the smoother and the original wave (visualization)
-
-```{r}
-plot(wave, sin(wave) - smoothed_y)
-```
-
-## MSE(sin(wave) - smoothed_y)
-
-```{r}
-mean((sin(wave) - smoothed_y)^2)
-```
-
-## Smoother with `smooth.spline`
-
-```{r}
-r_smooth <- smooth.spline(wave, y)
-mean((r_smooth$y - sin(wave))^2)
-```
-
-## Comparison with our smoother
-
-```{r}
-mean((r_smooth$y - smoothed_y)^2)
-```
-
-## Benchmarking
-
-```{r}
-
 source("shared.R")
 source("functions.R")
 source("simulate_data.R")
 
+data <- simulate_data()
+df <- read_bike_series()
+df <- df[c('ind', 'cnt')]
+```
 
-data<-simulate_data()
+## The data: the sine wave
 
-
-p_data<-ggplot(data$df, aes(x=x,y=y)) + 
+```{r}
+p_data <- ggplot(data$df, aes(x=x,y=y)) + 
   geom_point()
 
 p_data
 ```
 
-## Benchmarking
+## The data: bikes per day
+
+```{r}
+bike_data <- ggplot(df, aes(x=ind,y=cnt)) + 
+  geom_point()
+
+bike_data
+```
+
+## Studying the accuracy: Vizualisation for the wave
 
 ```{r}
 p_data +
@@ -174,8 +79,41 @@ p_data +
             color="orange")+
   geom_line(aes(y=smooth.spline(data$df$x,data$df$y,all.knots=TRUE)$y),
             color="red") +
-  geom_line(aes(y=smoother_v1(data$df$x,data$df$y,useSVD = TRUE, subsample=TRUE)$y),color="darkred")
+  geom_line(aes(y=smoother_v1(data$df$x,data$df$y,useSVD = TRUE, subsample=TRUE)$y),
+            color="darkred") +
+  geom_line(aes(y=loocv_smoother.v2(data$df$x,data$df$x,data$df$y,seq(0,10,1))$y),
+            color="blue")
 
+```
+
+## Studying the accuracy: MSE for the wave
+
+```{r}
+cat(MSE(smoother_v1(data$df$x,data$df$y)$y,data$real),'\n',MSE(smoother_v1(data$df$x,data$df$y,useSVD = TRUE)$y,data$real),'\n',MSE(smooth.spline(data$df$x,data$df$y,all.knots=TRUE)$y,data$real),'\n',MSE(smoother_v1(data$df$x,data$df$y,useSVD = TRUE, subsample=TRUE)$y,data$real),'\n',MSE(loocv_smoother.v2(data$df$x,data$df$x,data$df$y,seq(0,10,1))$y,data$real))
+```
+
+## Studying the accuracy: Vizualisation for the bikes
+
+```{r}
+bike_data +
+  geom_line(aes(y=smoother_v1(df$ind, df$cnt)$y),
+            color="yellow")+
+  geom_line(aes(y=cnt),
+            color="green")+
+  geom_line(aes(y=smoother_v1(df$ind, df$cnt,useSVD = TRUE)$y),
+            color="orange")+
+  geom_line(aes(y=smooth.spline(df$ind, df$cnt,all.knots=TRUE)$y),
+            color="red") +
+  geom_line(aes(y=smoother_v1(df$ind, df$cnt,useSVD = TRUE, subsample=TRUE)$y),
+            color="darkred") +
+  geom_line(aes(y=loocv_smoother.v2(df$ind, df$ind, df$cnt,seq(0,10,1))$y),
+            color="blue")
+```
+
+## Studying the accuracy: MSE for the
+
+```{r}
+cat(MSE(smoother_v1(df$ind,df$cnt)$y,df$cnt),'\n',MSE(smoother_v1(df$ind,df$cnt,useSVD = TRUE)$y,df$cnt),'\n',MSE(smooth.spline(df$ind,df$cnt,all.knots=TRUE)$y,df$cnt),'\n',MSE(smoother_v1(df$ind,df$cnt,useSVD = TRUE, subsample=TRUE)$y,df$cnt),'\n',MSE(loocv_smoother.v2(df$ind,df$ind,df$cnt,seq(0,10,1))$y,df$cnt))
 ```
 
 ## Benchmarking
@@ -187,6 +125,27 @@ mb<-microbenchmark(smoother_v1(data$df$x,data$df$y),
                smoother_v2(data,useSVD=TRUE, subsample = TRUE),
                smoother_v2(data,useSVD=TRUE,subsample = FALSE),
                smooth.spline(data$df$x,data$df$y),
+               loocv_smoother.v2(data$df$x,data$df$x,data$df$y,seq(0,10,1)),
                times=20)
 autoplot(mb)
 ```
+
+## Benchmarking: profiling our basic smoother
+
+```{r}
+profvis(loocv_smoother.v2(data$df$x,data$df$x,data$df$y,seq(0,10,1)))
+```
+
+## Benchmarking: profiling our basic smoother
+
+![Profile of loocv_smoother.v2](profvis.png)
+
+## Benchmarking: profiling our fastest smoother
+
+```{r}
+profvis(smoother_v2(data,useSVD=TRUE, subsample = TRUE))
+```
+
+## Benchmarking: profiling our fastest smoother
+
+![Profile of smoother_v2](profvis-svd.png)
