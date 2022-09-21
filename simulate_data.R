@@ -1,72 +1,78 @@
 
-x<-seq(0,20,0.1)
-y <- sin(x) + rnorm(x)
-plot(x,y)
+simulate_data<-function(from=0, to=20, step=0.1, signal=sin, noise=rnorm){
+  x<-seq(from,to,step)
+  data_y<-signal(x)
+  y<-data_y + noise(x)
+  structure(list(df=data.frame(x=x,y=y), real=data_y),class="simulation_data")
+}
+
+
+#Usage:
+
+#Simulate sin waves
+data<-simulate_data(signal=sin)
+
+p_data<-ggplot(data$df, aes(x=x,y=y)) + 
+  geom_point()
+
+p_data +
+  geom_line(aes(y=smoother_v1(data$df,data$df$x,data$df$y)$y),
+            color="blue")+
+  geom_line(aes(y=data$real),
+            color="green"
+)
 
 
 
+#Simulate cos waves
+data<-simulate_data(signal=cos)
 
-x<-seq(0,20,0.1)
-y <- sin(x) + rnorm(x)
+p_data<-ggplot(data$df, aes(x=x,y=y)) + 
+  geom_point()
 
-data<-data.frame(x,y)
+p_data +
+  geom_line(aes(y=smoother_v1(data$df,data$df$x,data$df$y)$y),
+            color="blue")+
+  geom_line(aes(y=data$real),
+            color="green"
+  )
 
-ggplot(data, aes(x = x, y = y)) + 
-  geom_point()+
-  geom_line(aes(y=loocv_smoother(x,y,seq(0,1,0.1))),color="blue")
+#Simulate logarithmic sequence
+data<-simulate_data(signal=log)
 
+p_data<-ggplot(data$df, aes(x=x,y=y)) + 
+  geom_point()
 
-wave <- seq(0, 10, 0.2)
-y <- sin(wave) + rnorm(wave)
-data<-data.frame(x=wave,y=y)
+p_data +
+  geom_line(aes(y=smoother_v1(data$df,data$df$x,data$df$y)$y),
+            color="blue")+
+  geom_line(aes(y=data$real),
+            color="green"
+  )
 
-#plot(x,y)
+#Simulate exponential sequence
+data<-simulate_data(signal=function(x) 2^x)
 
-#wave <- seq(0, 10, 0.2)
-#y <- sin(wave) + rnorm(wave)
+p_data<-ggplot(data$df, aes(x=x,y=y)) + 
+  geom_point()
 
-smoother_loocv_v1(data$x,data$y)
+p_data +
+  geom_line(aes(y=smoother_v1(data$df,data$df$x,data$df$y)$y),
+            color="blue")+
+  geom_line(aes(y=data$real),
+            color="green"
+  )
 
+#Simulate random values
+data<-simulate_data(signal=runif)
 
-#data<-data.frame(x=wave,y=y)
+p_data<-ggplot(data$df, aes(x=x,y=y)) + 
+  geom_point()
 
-ggplot(data, aes(x = x, y = y)) + 
-  geom_point()+
-  geom_line(aes(y=smoother_loocv_v1(x,y)),color="blue")
+p_data +
+  geom_line(aes(y=smoother_v1(data$df,data$df$x,data$df$y)$y),
+            color="blue")+
+  geom_line(aes(y=data$real),
+            color="green"
+  )
 
-
-ggplot(data, aes(x = x, y = y)) + 
-  geom_point()+
-  geom_line(aes(y=loocv_smoother(x,y, seq(0, 1, 0.1))),color="blue")
-
-
-ggplot(data, aes(x = x, y = y)) + 
-  geom_point()+
-  geom_line(aes(y=smoother_loocv_v1(x,y)),color="blue")
-
-ggplot(data, aes(x = x, y = y)) + 
-  geom_point()+
-  geom_line(aes(y=loocv_smoother(x,y,seq(0,1,0.1))),color="blue")
-
-plot(wave, y)
-lines(wave, l_m$S %*% y)
-lines(wave, smoother_loocv_v1(wave,y))
-
-
-ggplot(data, aes(x = Year, y = Temperature)) + 
-  geom_point()+
-  geom_line(aes(y=smoother_loocv_v1(data$Year,data$Temperature)),color="blue")
-
-ggplot(Nuuk_year, aes(x = year, y = mean)) + 
-  geom_point() + geom_smooth(se = FALSE) + 
-  geom_smooth(method = "lm", formula = y ~ poly(x, 10), color = "red", se = FALSE) + 
-  geom_smooth(method = "gam", formula = y ~ s(x, bs = "cr"), color = "purple", se = FALSE)+
-  geom_line(aes(y=smoother_loocv_v1(Nuuk_year$year,Nuuk_year$mean)),color="blue")
-
-
-
-x<-seq(0,20,0.1)
-y <- sin(x) + rnorm(x)
-data<-data.frame(x=x,y=y)
-
-###
