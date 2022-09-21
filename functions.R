@@ -194,15 +194,15 @@ smoother_v2<-function(data, x,y, lambda,order=4, subsample=TRUE, useSVD = FALSE,
   structure(list(xs=x,ys=f_hat),class="smoother")
 }
 
-loocv_smoother <- function(inner_knots, y, lambda){
+loocv_smoother <- function(inner_knots, x, y, lambda){
   n <-  length(lambda) #length(x) == length(y)
   loss <- rep(Inf, n) #store the loss for each lambda
   Sm <- list() #store all the S_lambda matrices
   sm_y <- list()
   
-  Omega <- pen_mat(inner_knots) #penalty matrix
+  Omega <- penalty_matrix_v1(inner_knots) #penalty matrix
   #Phi matrix
-  Phi <- splineDesign(c(rep(range(inner_knots), 3), inner_knots), inner_knots)
+  Phi <- splineDesign(c(rep(range(inner_knots), 3), inner_knots), x)
   
   #Phi^T Phi
   tphi_phi <- crossprod(Phi) #spares computation time: it's same for all lambdas
@@ -238,7 +238,7 @@ loocv_smoother.v2 <- function(inner_knots, x, y, lambda){
   Sm <- 0 #hold the best S_lambda matrix
   sm_y <- 0
   
-  Omega <- pen_mat(inner_knots) #penalty matrix
+  Omega <- penalty_matrix_v1(inner_knots) #penalty matrix
   #Phi matrix
   Phi <- splineDesign(sort(c(rep(range(inner_knots), 3), inner_knots)), x)
   
