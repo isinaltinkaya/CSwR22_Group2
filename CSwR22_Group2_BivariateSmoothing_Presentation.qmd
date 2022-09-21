@@ -92,6 +92,13 @@ p_data +
 cat(MSE(smoother_v1(data$df$x,data$df$y)$y,data$real),'\n',MSE(smoother_v1(data$df$x,data$df$y,useSVD = TRUE)$y,data$real),'\n',MSE(smooth.spline(data$df$x,data$df$y,all.knots=TRUE)$y,data$real),'\n',MSE(smoother_v1(data$df$x,data$df$y,useSVD = TRUE, subsample=TRUE)$y,data$real),'\n',MSE(loocv_smoother.v2(data$df$x,data$df$x,data$df$y,seq(0,10,1))$y,data$real))
 ```
 
+## MSE ?
+
+```{r}
+cat(MSE(smoother_v1(data$df$x,data$df$y,useSVD = TRUE)$y, data$df$y), '\n', MSE(data$real, data$df$y))
+```
+
+
 ## Studying the accuracy: Vizualisation for the bikes
 
 ```{r}
