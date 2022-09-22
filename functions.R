@@ -218,7 +218,7 @@ loocv_smoother <- function(inner_knots, x, y, lambda){
       sm_y[[i]] <- S %*% y
       
       #compute and add loss
-      loss[i] <- mean(((y - S * y)/(1 - diag(S)))^2, na.rm = TRUE)
+      loss[i] <- mean(((y - S %*% y)/(1 - diag(S)))^2, na.rm = TRUE)
     }
   }
   

@@ -118,21 +118,36 @@ plotly::ggplotly(pp)
 # smoother_v2(data$df,useSVD=FALSE, subsample=TRUE)
 # smoother_v2(data$df,useSVD=TRUE, subsample=FALSE)
 Rimp<-smooth.spline(data$df$x,data$df$y,all.knots=TRUE)$y
-Ourimp<-smoother_v2(data=data$df,x=data$df$x,y=data$df$y,useSVD=TRUE,subsample=TRUE)$y
-
-dif<-data.frame(y=Rimp-Ourimp, x=data$df$x)
-
-ggplot(dif, aes(x=x,y=y))+
-  geom_point()+
-  theme_bw()
 # 
+smoother_v2_useSVDT_subsT<-smoother_v2(data=data$df,x=data$df$x,y=data$df$y,useSVD=TRUE,subsample=TRUE)$y
+#smoother_v2_useSVDF_subsF<-smoother_v2(data=data$df,x=data$df$x,y=data$df$y,useSVD=FALSE,subsample=FALSE)$y
+smoother_v2_useSVDT_subsF<-smoother_v2(data=data$df,x=data$df$x,y=data$df$y,useSVD=TRUE,subsample=FALSE)$y
+smoother_v2_useSVDF_subsT<-smoother_v2(data=data$df,x=data$df$x,y=data$df$y,useSVD=FALSE,subsample=TRUE)$y
 # 
-# ggplot(dif, aes(x=x,y=y))+
-#   geom_boxplot()+
-#   theme_bw()
+
+Real<-data$real
+
+# dif<-data.frame(y=Real-Ourimp, x=data$df$x)
+dif<-rbind(
+  data.frame(y=Real-smoother_v2_useSVDT_subsT,x=data$df$x, Method="smoother_v2_useSVDT_subsT"),
+  data.frame(y=Real-smoother_v2_useSVDT_subsF,x=data$df$x, Method="smoother_v2_useSVDT_subsF"), 
+  data.frame(y=Real-smoother_v2_useSVDF_subsT,x=data$df$x, Method="smoother_v2_useSVDF_subsT"), 
+  data.frame(y=Real-Rimp,x=data$df$x, Method="Rdiff") )
+# plot(Real-Rimp)+
+#   lines(Real-Ourimp)+
+#   lines(Real-Rimp,color="red")
+
+difp<-ggplot(dif, aes(x=x,y=y,color=Method))+
+  geom_line()+
+  theme_bw()+
+  theme(legend.position = "top") 
+
+
+
+plotly::ggplotly(difp) 
+
 
 ```
-
 
 ## Benchmarking
 ```{r,echo=FALSE}
@@ -142,11 +157,11 @@ ggplot(dif, aes(x=x,y=y))+
 #   theme_bw()
 
 
-mb<-microbenchmark(smoother_v1(data$df$x,data$df$y),
-                   smoother_v2(data,useSVD=FALSE, subsample = TRUE),
+mb<-microbenchmark(smoother_v2(data,useSVD=FALSE, subsample = TRUE),
                    smoother_v2(data,useSVD=TRUE, subsample = TRUE),
                    smoother_v2(data,useSVD=TRUE,subsample = FALSE),
-                   smooth.spline(data$df$x,data$df$y),
+                   smooth.spline(data$df$x,data$df$y,all.knots=FALSE),
+                   smooth.spline(data$df$x,data$df$y,all.knots = TRUE),
                    times=2)
 
 aup<-autoplot(mb)+
@@ -162,14 +177,15 @@ plotly::ggplotly(aup)
 ## Benchmarking: Fixed lambda
 ```{r,echo=FALSE}
 
-Rlambda<-smooth.spline(data$df$x,data$df$y)$lambda
+rl<-smooth.spline(data$df$x,data$df$y)$lambda
 
-mb<-microbenchmark(smoother_v1(lambda=Rlambda,data$df$x,data$df$y),
-                   smoother_v2(lambda=Rlambda,data,useSVD=FALSE, subsample = TRUE),
-                   smoother_v2(lambda=Rlambda,data,useSVD=TRUE, subsample = TRUE),
-                   smoother_v2(lambda=Rlambda,data,useSVD=TRUE,subsample = FALSE),
-                   smooth.spline(lambda=Rlambda,data$df$x,data$df$y),
-                   times=2)
+mb<-microbenchmark(
+  smoother_v2(lambda=rl,data,useSVD=FALSE, subsample = TRUE),
+  smoother_v2(lambda=rl,data,useSVD=TRUE, subsample = TRUE),
+  smoother_v2(lambda=rl,data,useSVD=TRUE,subsample = FALSE),
+  smooth.spline(lambda=rl,data$df$x,data$df$y,all.knots=FALSE),
+  smooth.spline(lambda=rl,data$df$x,data$df$y,all.knots = TRUE),
+  times=2)
 
 aup<-autoplot(mb)+
   geom_jitter(aes(color = expr), alpha = 0.5) +
@@ -181,15 +197,46 @@ plotly::ggplotly(aup)
 
 ## Benchmarking: Size of data
 ```{r,echo=FALSE}
+cat("Simulate data from 0 to [20,50,100,200] with a step size of 0.1, where signal is a sine wave and noise is sampled from normal distribution.")
+data20 <- simulate_data(from=0,to=20,step=0.1,signal=sin,noise=rnorm)
+data50 <- simulate_data(from=0,to=50,step=0.1,signal=sin,noise=rnorm)
+data100 <- simulate_data(from=0,to=100,step=0.1,signal=sin,noise=rnorm)
+data200 <- simulate_data(from=0,to=200,step=0.1,signal=sin,noise=rnorm)
 
-Rlambda<-smooth.spline(data$df$x,data$df$y)$lambda
 
-mb<-microbenchmark(smoother_v1(lambda=Rlambda,data$df$x,data$df$y),
-                   smoother_v2(lambda=Rlambda,data,useSVD=FALSE, subsample = TRUE),
-                   smoother_v2(lambda=Rlambda,data,useSVD=TRUE, subsample = TRUE),
-                   smoother_v2(lambda=Rlambda,data,useSVD=TRUE,subsample = FALSE),
-                   smooth.spline(lambda=Rlambda,data$df$x,data$df$y),
-                   times=2)
+mb<-microbenchmark(
+  smoother_v2(data20,useSVD=FALSE, subsample = TRUE),
+    smoother_v2(data50,useSVD=FALSE, subsample = TRUE),
+    smoother_v2(data100,useSVD=FALSE, subsample = TRUE),
+    smoother_v2(data200,useSVD=FALSE, subsample = TRUE),
+
+
+  smoother_v2(data20,useSVD=TRUE, subsample = TRUE),
+    smoother_v2(data50,useSVD=TRUE, subsample = TRUE),
+    smoother_v2(data100,useSVD=TRUE, subsample = TRUE),
+    smoother_v2(data200,useSVD=TRUE, subsample = TRUE),
+
+
+  smoother_v2(data20,useSVD=TRUE,subsample = FALSE),
+    smoother_v2(data50,useSVD=TRUE,subsample = FALSE),
+    smoother_v2(data100,useSVD=TRUE,subsample = FALSE),
+    smoother_v2(data200,useSVD=TRUE,subsample = FALSE),
+
+
+  smooth.spline(data20$df$x,data20$df$y,all.knots=FALSE),
+    smooth.spline(data50$df$x,data50$df$y,all.knots=FALSE),
+    smooth.spline(data100$df$x,data100$df$y,all.knots=FALSE),
+      smooth.spline(data200$df$x,data200$df$y,all.knots=FALSE),
+
+
+
+  smooth.spline(data20$df$x,data20$df$y,all.knots = TRUE),
+  smooth.spline(data50$df$x,data50$df$y,all.knots = TRUE),
+  smooth.spline(data100$df$x,data100$df$y,all.knots = TRUE),
+    smooth.spline(data200$df$x,data200$df$y,all.knots = TRUE),
+
+  times=2
+)
 
 aup<-autoplot(mb)+
   geom_jitter(aes(color = expr), alpha = 0.5) +
@@ -199,3 +246,51 @@ aup<-autoplot(mb)+
 plotly::ggplotly(aup)
 ```
 
+
+## Small improvements
+
+```{r,echo=TRUE}
+diff_v2 <- function(v) {
+  v[2:length(v)]-v[1:(length(v)-1L)]
+}
+
+#use byte compiling for faster diff()
+diff_v3 <- compiler::cmpfun(function(v) {
+  v[2:length(v)]-v[1:(length(v)-1L)]
+})
+
+diff_v4 <- compiler::cmpfun(function(v) {
+  l<-length(v)
+  v[2:l]-v[1:(l-1L)]
+})
+
+x = rnorm(1000)
+
+all(diff(x)==diff_v2(x))
+all(diff(x)==diff_v3(x))
+all(diff(x)==diff_v4(x))
+
+
+microbenchmark(times = 100, unit="ms",diff(x),diff_v2(x),diff_v3(x),diff_v4(x))
+#thus decided to use diff_v3
+```
+
+
+### Small improvements
+
+Is it worthwhile checking if unsorted and run sort accordingly?
+
+```{r, echo=TRUE}
+sort_v1<-function(d) sort(d, method="quick")
+sort_v2<-function(d) if(is.unsorted(d)) sort(d, method="quick")
+
+d<-rnorm(1000)
+sorted<-sort(d)
+microbenchmark(sort_v1(d),sort_v1(sorted),sort_v2(d),sort_v2(sorted),times = 10)
+```
+
+Conclusion: Depends on what we expect the standard data to look like.
+
+## Conclusions
+
+* Why? Fortran
