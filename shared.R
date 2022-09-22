@@ -11,7 +11,7 @@ library(readr)
 library(tidyr)
 library(ggplot2)
 library(dplyr)
-library(fda)
+#library(fda)
 library(profvis)
 
 

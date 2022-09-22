@@ -1,0 +1,201 @@
+---
+title: "CSwR22 Group 2: Bivariate Smoothing"
+author: "Isin Altinkaya, Dumitru Sebastian Pavel"
+date: 22.09.22
+format:
+  revealjs:
+    slide-number: c/t
+
+editor: visual
+---
+
+
+
+## Objective
+
+
+
+## Development process
+
+
+* `Git` and `GitHub` for version management and efficient collaboration
+* `Conda` environment for R package version management
+* `Quarto presentation` for slideshow
+* `ggplotly` for interactive ggplot plots 
+* Data simulation for evaluating the performance 
+
+
+## Data simulation
+::: {.column width="100%" heigth="100%"}
+
+```{r, echo=TRUE, `code-line-numbers` = "42"}
+#| code-line-numbers: "|3|4|5|9"
+#| output-location: column-fragment
+#| fig-alt: "Signal + Noise"
+simulate_data <- function(from = 0, to = 20, step = 0.1, signal = sin, noise = rnorm) {
+  x <- seq(from, to, step)
+  data_y <- signal(x)
+  y <- data_y + noise(x)
+  structure(list(df = data.frame(x = x, y = y), real = data_y), class = "simulation_data")
+}
+
+# Example
+simulate_data(from=0,to=5,step=1,signal=sin,noise=rnorm)
+
+```
+:::
+
+<!-- ## Simulated data: The sine wave -->
+
+<!-- ```{r,echo=FALSE} -->
+<!-- source("shared.R") -->
+<!-- ``` -->
+<!-- ```{r, echo=TRUE} -->
+<!-- data <- simulate_data(from=0,to=20,step=0.1,signal=sin,noise=rnorm) -->
+
+<!-- ``` -->
+<!-- ```{r,echo=FALSE} -->
+<!-- p_data <- ggplot(data$df, aes(x=x,y=y)) +  -->
+<!--   geom_point()+ -->
+<!--   theme_bw() -->
+
+<!-- p_data -->
+<!-- ``` -->
+
+
+## Simulated data: The sine wave
+
+```{r,echo=FALSE}
+source("shared.R")
+```
+```{r, echo=TRUE}
+set.seed(42)
+data <- simulate_data(from=0,to=20,step=0.1,signal=sin,noise=rnorm)
+```
+::: {.column width="100%" heigth="100%"}
+```{r,echo=FALSE}
+p_data <- ggplot(data$df, aes(x=x,y=y)) + 
+  geom_point()+
+  theme_bw()+
+   geom_line(aes(y=data$real),color="green")
+
+plotly::ggplotly(p_data)
+```
+:::
+
+## Benchmarking
+
+```{r,echo=FALSE}
+source("functions.R")
+
+p_data<-ggplot(data$df, aes(x=x,y=y)) + 
+  geom_point()+
+  theme_bw()
+
+pp<- p_data +
+  geom_line(aes(y=smoother_v1(data$df$x,data$df$y)$y),
+            color="yellow")+
+  geom_line(aes(y=data$real),
+            color="green")+
+  geom_line(aes(y=smoother_v1(data$df$x,data$df$y,useSVD = TRUE)$y),
+            color="orange")+
+  geom_line(aes(y=smooth.spline(data$df$x,data$df$y,all.knots=TRUE)$y),
+            color="red")+
+  geom_line(aes(y=smoother_v1(data$df$x,data$df$y,useSVD = TRUE, subsample=TRUE)$y),
+            color="darkred")
+plotly::ggplotly(pp)
+
+```
+
+## Benchmarking
+
+```{r,echo=FALSE}
+
+# smoother_v1(data$df$x,data$df$y,useSVD=FALSE, subsample=TRUE)
+# smoother_v1(data$df$x,data$df$y,useSVD=TRUE, subsample=FALSE)
+# smoother_v1(data$df$x,data$df$y,useSVD=TRUE, subsample=TRUE)
+# 
+# smoother_v2(data$df,useSVD=FALSE, subsample=TRUE)
+# smoother_v2(data$df,useSVD=TRUE, subsample=FALSE)
+Rimp<-smooth.spline(data$df$x,data$df$y,all.knots=TRUE)$y
+Ourimp<-smoother_v2(data=data$df,x=data$df$x,y=data$df$y,useSVD=TRUE,subsample=TRUE)$y
+
+dif<-data.frame(y=Rimp-Ourimp, x=data$df$x)
+
+ggplot(dif, aes(x=x,y=y))+
+  geom_point()+
+  theme_bw()
+# 
+# 
+# ggplot(dif, aes(x=x,y=y))+
+#   geom_boxplot()+
+#   theme_bw()
+
+```
+
+
+## Benchmarking
+```{r,echo=FALSE}
+
+# p_data<-ggplot(data$df, aes(x=x,y=y)) + 
+#   geom_point()+
+#   theme_bw()
+
+
+mb<-microbenchmark(smoother_v1(data$df$x,data$df$y),
+                   smoother_v2(data,useSVD=FALSE, subsample = TRUE),
+                   smoother_v2(data,useSVD=TRUE, subsample = TRUE),
+                   smoother_v2(data,useSVD=TRUE,subsample = FALSE),
+                   smooth.spline(data$df$x,data$df$y),
+                   times=2)
+
+aup<-autoplot(mb)+
+  geom_jitter(aes(color = expr), alpha = 0.5) +
+  theme_bw()+
+  theme(legend.position = "none")
+  
+plotly::ggplotly(aup)
+```
+
+
+
+## Benchmarking: Fixed lambda
+```{r,echo=FALSE}
+
+Rlambda<-smooth.spline(data$df$x,data$df$y)$lambda
+
+mb<-microbenchmark(smoother_v1(lambda=Rlambda,data$df$x,data$df$y),
+                   smoother_v2(lambda=Rlambda,data,useSVD=FALSE, subsample = TRUE),
+                   smoother_v2(lambda=Rlambda,data,useSVD=TRUE, subsample = TRUE),
+                   smoother_v2(lambda=Rlambda,data,useSVD=TRUE,subsample = FALSE),
+                   smooth.spline(lambda=Rlambda,data$df$x,data$df$y),
+                   times=2)
+
+aup<-autoplot(mb)+
+  geom_jitter(aes(color = expr), alpha = 0.5) +
+  theme_bw()+
+  theme(legend.position = "none")
+  
+plotly::ggplotly(aup)
+```
+
+## Benchmarking: Size of data
+```{r,echo=FALSE}
+
+Rlambda<-smooth.spline(data$df$x,data$df$y)$lambda
+
+mb<-microbenchmark(smoother_v1(lambda=Rlambda,data$df$x,data$df$y),
+                   smoother_v2(lambda=Rlambda,data,useSVD=FALSE, subsample = TRUE),
+                   smoother_v2(lambda=Rlambda,data,useSVD=TRUE, subsample = TRUE),
+                   smoother_v2(lambda=Rlambda,data,useSVD=TRUE,subsample = FALSE),
+                   smooth.spline(lambda=Rlambda,data$df$x,data$df$y),
+                   times=2)
+
+aup<-autoplot(mb)+
+  geom_jitter(aes(color = expr), alpha = 0.5) +
+  theme_bw()+
+  theme(legend.position = "none")
+  
+plotly::ggplotly(aup)
+```
+

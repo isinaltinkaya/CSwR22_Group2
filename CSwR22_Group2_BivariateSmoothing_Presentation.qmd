@@ -98,7 +98,6 @@ cat(MSE(smoother_v1(data$df$x,data$df$y)$y,data$real),'\n',MSE(smoother_v1(data$
 cat(MSE(smoother_v1(data$df$x,data$df$y,useSVD = TRUE)$y, data$df$y), '\n', MSE(data$real, data$df$y))
 ```
 
-
 ## Studying the accuracy: Vizualisation for the bikes
 
 ```{r}
@@ -154,5 +153,6 @@ profvis(smoother_v2(data,useSVD=TRUE, subsample = TRUE))
 ```
 
 ## Benchmarking: profiling our fastest smoother
+microbenchmark(smoother_v1(data$df$x,data$df$y),
 
 ![Profile of smoother_v2](profvis-svd.png)
